@@ -25,6 +25,11 @@ const urlSchema = new mongoose.Schema({
         type : Boolean,
         default : true,
     },
+    plan : {
+        type : String,
+        default : 'free',
+        enum : ['premium', 'free']
+    },
     createdAt : {
         type : Date,
         default : Date.now
