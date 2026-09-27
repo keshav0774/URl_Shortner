@@ -1,5 +1,12 @@
 import express from 'express';
-
+import {
+    newUrl,
+    actualurl,
+    totalUrl,
+    currentUrl,
+    updateUrl,
+    deleteUrl
+} from "../controllers/urlController.js";
 const urlRouter = express.Router(); 
 
 

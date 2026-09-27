@@ -8,18 +8,23 @@ const generateShortCode = function(){
 
 export const newUrl = async(req,res)=>{
     try {
-        const user = await userModel.findById(req.user._id);
+      
         const {actualurl ,customurl } = req.body;
 
         let shortCode; 
-        if(user.plan === 'premium' && customurl){
+        if(req.user.plan === 'premium' && customurl){
             shortCode = customurl;
             const url = await urlModel.create({
                 userId : req.user._id,
                 actualUrl : actualurl, 
                 shortCode : shortCode
             }); 
-
+            await userModel.findByIdAndUpdate(
+                req.user._id,
+                {
+                 $push: { urls: url._id }
+                }
+            );
             return res.status(200).json({
                 message : "Url is created", 
                 url : url
@@ -80,16 +85,6 @@ export const totalUrl = async(req,res)=>{
     }
 }
 
-export const updateUrl = async(req,res)=>{
-    try {
-        
-    } catch (error) {
-        console.log("Error from updateUrl", error.message);
-        return res.status(500).json({
-            message : "Internal Server Error"
-        })
-    }
-}
 
 export const deleteUrl = async(req,res)=>{
     try {
@@ -142,3 +137,77 @@ export const currentUrl = async (req, res) => {
 };
 
 
+export const updateUrl = async (req, res) => {
+    try {
+        const { actualUrl, customurl, expiredAt, isActive } = req.body;
+
+        const updateFields = {};
+
+        // Actual URL update
+        if (actualUrl !== undefined) {
+            updateFields.actualUrl = actualUrl;
+        }
+
+        // Expiry update
+        if (expiredAt !== undefined) {
+            updateFields.expiredAt = expiredAt;
+        }
+
+        // Enable / Disable URL
+        if (isActive !== undefined) {
+            updateFields.isActive = isActive;
+        }
+
+        // Custom alias only for premium users
+        if (customurl !== undefined) {
+
+            if (req.user.plan !== "premium") {
+                return res.status(403).json({
+                    message: "Custom URL is available for premium users only"
+                });
+            }
+
+            updateFields.shortCode = customurl;
+        }
+
+        const updatedUrl = await urlModel.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                userId: req.user._id
+            },
+            {
+                $set: updateFields
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        if (!updatedUrl) {
+            return res.status(404).json({
+                message: "URL not found"
+            });
+        }
+
+        return res.status(200).json({
+            message: "URL updated successfully",
+            url: updatedUrl
+        });
+
+    } catch (error) {
+
+        // custom alias already exists
+        if (error.code === 11000) {
+            return res.status(409).json({
+                message: "Custom URL already exists"
+            });
+        }
+
+        console.log("Error from updateUrl:", error.message);
+
+        return res.status(500).json({
+            message: "Internal Server Error"
+        });
+    }
+};
