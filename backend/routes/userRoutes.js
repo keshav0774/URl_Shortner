@@ -1,12 +1,18 @@
-// import express from 'express'
+import express from 'express'
+import {
+    authenticatedRatelimiter,
+    unauthenticatedRatelimiter
+} from '../middleware/rateLimiter.js';
+import { authmiddleWare } from '../middleware/authMiddleware.js';
+import { login, signup, logout, profile, deleteAcount, update } from '../controllers/userControllers.js';
 
-// const userRouter = express.Router();
+const userRouter = express.Router();
 
-// userRouter.post('/signup',signup);
-// userRouter.post('/login',login);
-// userRouter.post('/logout',authmiddleWare,authenticateRatelimiter,logout);
-// userRouter.get('/profile',authmiddleWare,authenticateRatelimiter,profile);
-// userRouter.post('/delete',authmiddleWare,authenticateRatelimiter,deleteAcount);
-// userRouter.patch('/update',authmiddleWare, update);
+userRouter.post('/signup',unauthenticatedRatelimiter,signup);
+userRouter.post('/login',unauthenticatedRatelimiter,login);
+userRouter.post('/logout',authmiddleWare,authenticatedRatelimiter,logout);
+userRouter.get('/profile',authmiddleWare,authenticatedRatelimiter,profile);
+userRouter.post('/delete',authmiddleWare,authenticatedRatelimiter,deleteAcount);
+userRouter.patch('/update',authmiddleWare, update);
 
-// export default userRouter; 
+export default userRouter; 
