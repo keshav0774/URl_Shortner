@@ -14,7 +14,11 @@ const userSchema = new mongoose.Schema({
         lowercase: true,
         trim: true
     },
-
+    plan: {
+            type: String,
+            enum: ["free", "premium"],
+            default: "free",
+    },
     password: {
         type: String,
         required: true
@@ -29,7 +33,7 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     }
-});
+},{ timestamps: true });
 
 const userModel = mongoose.model("user", userSchema);
 

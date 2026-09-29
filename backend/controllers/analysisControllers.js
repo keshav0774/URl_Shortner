@@ -3,13 +3,15 @@ import urlModel from '../models/urlSchema.js';
 import userModel from '../models/userSchema.js';
 
 
-export const analysis = async(req,res)=>{
+export const getMyUrls = async(req,res)=>{
     try {
         const {_id} = req.user;
   
         const urls = await urlModel.find({
             userId : _id
-        });
+        }).sort({ createdAt: -1 })
+        .select("actualUrl shortCode totalClick isActive expiresAt createdAt")
+        ;
 
         if(!urls){
         return res.status(401).json({
@@ -20,7 +22,8 @@ export const analysis = async(req,res)=>{
        }
        return res.status(200).json({
             message : "here is you're urls",
-            urls : urls
+            urls : urls,
+            total: urls.length
         })
     } catch (error) {
         console.log("Error from analysis", error.message);

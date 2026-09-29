@@ -1,9 +1,6 @@
 import jwt from 'jsonwebtoken';
 import userModel from '../models/userSchema.js';
 import redisClient from '../config/redis.js';
-import cookieParser from "cookie-parser";
-
-
 
 export const authmiddleWare = async (req,res,next)=>{
     try {
@@ -19,9 +16,10 @@ export const authmiddleWare = async (req,res,next)=>{
         // check token is blac listed or not 
 
         const blockedToken = await redisClient.get(
-            `blockList : ${token}`
+            `blockList:${token}`
         );
 
+        
         if(blockedToken){
             return res.status(401).json({
                 message : "Please Login Again"

@@ -1,24 +1,17 @@
 import express from 'express';
 import {
-    newUrl,
-    actualurl,
-    totalUrl,
-    currentUrl,
-    updateUrl,
+    generate,
     deleteUrl
-} from "../controllers/urlController.js";
+} from "../controllers/urlControllers.js";
+import { authenticatedRatelimiter } from '../rateLimiter/userRateLimiter.js';
+import { authmiddleWare } from '../middleware/authMiddleware.js';
 const urlRouter = express.Router(); 
 
 
-urlRouter.post('/generate', newUrl);
+urlRouter.post('/generate',authmiddleWare, authenticatedRatelimiter, generate);
+ 
+urlRouter.delete('/:id',authmiddleWare, deleteUrl);
 
-// for authenticate user 
 
-urlRouter.get('/urls', totalUrl);
-urlRouter.get('/urls/:id', currentUrl); 
-urlRouter.patch('/urls/:id', updateUrl);
-urlRouter.delete('/urls/:id', deleteUrl);
-
-urlRouter.get('/:shortCode', actualurl );
 
 export default urlRouter;

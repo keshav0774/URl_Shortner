@@ -6,38 +6,56 @@ const generateShortCode = function(){
     return crypto.randomBytes(4).toString('hex');
 }
 
-export const newUrl = async(req,res)=>{
+const isValidHttpUrl = (value) => {
+    try {
+        const u = new URL(value);
+        return u.protocol === "http:" || u.protocol === "https:";
+    } catch {
+        return false;
+    }
+};
+
+export const generate = async(req,res)=>{
     try {
       
         const {actualurl ,customurl } = req.body;
+        const actualUrl = actualurl?.trim();
 
+        if (!actualUrl || !isValidHttpUrl(actualUrl)) {
+            return res.status(400).json({ message: "Valid http/https URL do" });
+        }
         let shortCode; 
         if(req.user.plan === 'premium' && customurl){
             shortCode = customurl;
-            const url = await urlModel.create({
-                userId : req.user._id,
-                actualUrl : actualurl, 
-                shortCode : shortCode
-            }); 
-            await userModel.findByIdAndUpdate(
-                req.user._id,
-                {
-                 $push: { urls: url._id }
+             try {
+                const url = await urlModel.create({
+                    userId: req.user._id,
+                    actualUrl,
+                    shortCode: customurl,
+                });
+                return res.status(201).json({ message: "Url is created", url });
+            } catch (err) {
+                if (err.code === 11000) {
+                    return res.status(409).json({ message: "Ye custom code already le liya gaya hai" });
                 }
-            );
-            return res.status(200).json({
-                message : "Url is created", 
-                url : url
-            })
+                throw err;
+            }
+        
         }
-        else {
-            shortCode = generateShortCode(); 
-            const url = await urlModel.create({actualUrl : actualurl, shortCode : shortCode, userId : req.user._id})
-            return res.status(200).json({
-                message : "Url is created", 
-                url : url
-            })
+       for (let attempt = 0; attempt < 5; attempt++) {
+            try {
+                const url = await urlModel.create({
+                    userId: req.user._id,
+                    actualUrl,
+                    shortCode: generateShortCode(),
+                });
+                return res.status(201).json({ message: "Url is created", url });
+            } catch (err) {
+                if (err.code === 11000) continue;
+                throw err;
+            }
         }
+        return res.status(500).json({ message: "Short code generate nahi ho paya, dobara try karo" });
     } catch (error) {
         console.log("Error from newUrl", error.message);
         return res.status(500).json({
@@ -46,7 +64,7 @@ export const newUrl = async(req,res)=>{
     }
 }
 
-export const actualurl = async(req,res)=>{
+export const redirectUrl = async(req,res)=>{
     try {
         const {shortCode} = req.params; 
 
@@ -69,26 +87,10 @@ export const actualurl = async(req,res)=>{
     }
 }
 
-export const totalUrl = async(req,res)=>{
-    try {
-        const urls = await userModel.findById({_id : req.user._id}).populate('urls');
-
-        return res.status(200).json({
-            message : "Here is the url",
-            urls : urls.urls
-        })
-    } catch (error) {
-        console.log("Error from totalUrl", error.message);
-        return res.status(500).json({
-            message : "Internal Server Error"
-        })
-    }
-}
-
 
 export const deleteUrl = async(req,res)=>{
     try {
-        const {shortCode} = req.params; 
+        const { id } = req.params; 
         const deletedUrl = await urlModel.findOneAndDelete({_id : req.params.id,
             userId : req.user._id
         });
@@ -113,101 +115,3 @@ export const deleteUrl = async(req,res)=>{
         })
     }
 }
-
-export const currentUrl = async (req, res) => {
-    try {
-        const url = await urlModel.findOne({
-            _id: req.params.id,
-            userId: req.user._id
-        });
-
-        if (!url) {
-            return res.status(404).json({
-                message: "URL not found"
-            });
-        }
-
-        return res.status(200).json({ url });
-
-    } catch (error) {
-        return res.status(500).json({
-            message: "Internal Server Error"
-        });
-    }
-};
-
-
-export const updateUrl = async (req, res) => {
-    try {
-        const { actualUrl, customurl, expiredAt, isActive } = req.body;
-
-        const updateFields = {};
-
-        // Actual URL update
-        if (actualUrl !== undefined) {
-            updateFields.actualUrl = actualUrl;
-        }
-
-        // Expiry update
-        if (expiredAt !== undefined) {
-            updateFields.expiredAt = expiredAt;
-        }
-
-        // Enable / Disable URL
-        if (isActive !== undefined) {
-            updateFields.isActive = isActive;
-        }
-
-        // Custom alias only for premium users
-        if (customurl !== undefined) {
-
-            if (req.user.plan !== "premium") {
-                return res.status(403).json({
-                    message: "Custom URL is available for premium users only"
-                });
-            }
-
-            updateFields.shortCode = customurl;
-        }
-
-        const updatedUrl = await urlModel.findOneAndUpdate(
-            {
-                _id: req.params.id,
-                userId: req.user._id
-            },
-            {
-                $set: updateFields
-            },
-            {
-                new: true,
-                runValidators: true
-            }
-        );
-
-        if (!updatedUrl) {
-            return res.status(404).json({
-                message: "URL not found"
-            });
-        }
-
-        return res.status(200).json({
-            message: "URL updated successfully",
-            url: updatedUrl
-        });
-
-    } catch (error) {
-
-        // custom alias already exists
-        if (error.code === 11000) {
-            return res.status(409).json({
-                message: "Custom URL already exists"
-            });
-        }
-
-        console.log("Error from updateUrl:", error.message);
-
-        return res.status(500).json({
-            message: "Internal Server Error"
-        });
-    }
-};

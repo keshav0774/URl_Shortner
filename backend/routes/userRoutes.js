@@ -2,7 +2,7 @@ import express from 'express'
 import {
     authenticatedRatelimiter,
     unauthenticatedRatelimiter
-} from '../middleware/rateLimiter.js';
+} from '../rateLimiter/userRateLimiter.js';
 import { authmiddleWare } from '../middleware/authMiddleware.js';
 import { login, signup, logout, profile, deleteAcount, update } from '../controllers/userControllers.js';
 

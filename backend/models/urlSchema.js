@@ -9,7 +9,8 @@ const urlSchema = new mongoose.Schema({
     },
     actualUrl : {
         type : String, 
-        require : "true"
+        required: true,
+         trim: true
     },
     shortCode : {
         type : String,
@@ -24,11 +25,6 @@ const urlSchema = new mongoose.Schema({
     isActive : {
         type : Boolean,
         default : true,
-    },
-    plan : {
-        type : String,
-        default : 'free',
-        enum : ['premium', 'free']
     },
     createdAt : {
         type : Date,

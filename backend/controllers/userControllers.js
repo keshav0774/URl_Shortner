@@ -23,6 +23,7 @@ export const signup = async(req,res)=>{
         name : user.name,
         userId : user._id,
         email : user.email,
+        plan : user.plan
     };
 
     const token = jwt.sign(
@@ -52,9 +53,6 @@ export const signup = async(req,res)=>{
 export const login = async(req,res)=>{
    try {
       
-    
-    
-    
     const {email , password} = req.body; 
     const user = await userModel.findOne({ email });
         if(!user){
@@ -63,7 +61,8 @@ export const login = async(req,res)=>{
           const reply = {
           name:user.name,
           userId:user._id,
-          email:user.email
+          email:user.email,
+          plan : user.plan
         }
     const hassPassword = await bcrypt.compare(password,user.password);
     if (!hassPassword) {
@@ -138,10 +137,11 @@ export const profile = async (req,res)=>{
         const user = req.user; 
         
         
-        const reply = {
+       const reply = {
           name:user.name,
-         userId:user._id,
-        email:user.email
+          userId:user._id,
+          email:user.email,
+          plan : user.plan
         }
         res.status(200).json({
             message: "here is your profile",
@@ -192,10 +192,15 @@ export const update = async(req,res)=>{
                 message : "Something went wrong"
             })
         }
-
+        const reply = {
+          name:user.name,
+          userId:user._id,
+          email:user.email,
+          plan : user.plan
+        }
         return res.status(200).json({
             message : "User update Successfully",
-            user
+            user    : reply
         })
     } catch (error) {
         return res.status(500).json({
