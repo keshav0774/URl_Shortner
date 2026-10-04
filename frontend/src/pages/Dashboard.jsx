@@ -24,9 +24,7 @@ import { API_BASE_URL } from "../config/api";
 export default function Dashboard() {
   const navigate = useNavigate();
 
-  // ================================
-  // STATE
-  // ================================
+
 
   const [user, setUser] = useState(null);
   const [urls, setUrls] = useState([]);
@@ -171,10 +169,12 @@ export default function Dashboard() {
 
       const data = await response.json();
 
-      if (response.status === 401) {
-        navigate("/");
-        return;
-      }
+      if (response.status === 429) {
+            setError(
+             data.message || "Limit reached. Please try again later."
+            );
+          return;
+        }
 
       if (!response.ok) {
         throw new Error(
