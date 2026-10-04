@@ -1,6 +1,7 @@
 import userModel from '../models/userSchema.js'
 import urlModel from '../models/urlSchema.js'
 import crypto from "crypto";
+import analysisModel from "../models/analysisSchema.js";
 
 const generateShortCode = function(){
     return crypto.randomBytes(4).toString('hex');
@@ -64,28 +65,89 @@ export const generate = async(req,res)=>{
     }
 }
 
-export const redirectUrl = async(req,res)=>{
-    try {
-        const {shortCode} = req.params; 
+export const redirectUrl = async (req, res) => {
+  try {
+    const { shortCode } = req.params;
 
-        const url = await urlModel.findOne({shortCode});
+    // Find URL
+    const url = await urlModel.findOne({
+      shortCode,
+    });
 
-        if(!url) return res.status(404).json({
-            message : "Invalid Short Code"
-        });
-        await urlModel.updateOne(
-         { _id: url._id },
-         { $inc: { totalClick: 1 } }
-        );
-        return res.redirect(url.actualUrl);
-
-    } catch (error) {
-        console.log("Error from actual", error.message)
-        return res.status(500).json({
-            message : "Internal Server Error"
-        })
+    if (!url) {
+      return res.status(404).json({
+        message: "Invalid Short Code",
+      });
     }
-}
+
+    // Check active
+    if (!url.isActive) {
+      return res.status(410).json({
+        message: "This URL is inactive",
+      });
+    }
+
+   
+    if (
+      url.expiredAt &&
+      new Date(url.expiredAt) <= new Date()
+    ) {
+      return res.status(410).json({
+        message: "This URL has expired",
+      });
+    }
+
+    const today = new Date();
+
+    today.setUTCHours(0, 0, 0, 0);
+
+    await Promise.all([
+      // Total click
+      urlModel.updateOne(
+        {
+          _id: url._id,
+        },
+        {
+          $inc: {
+            totalClick: 1,
+          },
+        }
+      ),
+
+      // Daily click
+      analysisModel.updateOne(
+        {
+          urlId: url._id,
+          date: today,
+        },
+        {
+          $inc: {
+            clicks: 1,
+          },
+
+          $setOnInsert: {
+            userId: url.userId,
+          },
+        },
+        {
+          upsert: true,
+        }
+      ),
+    ]);
+
+    return res.redirect(url.actualUrl);
+
+  } catch (error) {
+    console.log(
+      "Error from redirectUrl:",
+      error.message
+    );
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+};
 
 
 export const deleteUrl = async(req,res)=>{

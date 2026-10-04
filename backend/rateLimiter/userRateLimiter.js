@@ -13,7 +13,7 @@ export const unauthenticatedRatelimiter = async(req,res,next)=>{
         }
        else if(limit >5){
             const remainTime = await redisClient.ttl(key);
-             return res.status(401).json({
+             return res.status(429).json({
                message : `To many request. Try again after ${remainTime} ` 
             });
         }
@@ -35,9 +35,9 @@ export const authenticatedRatelimiter = async(req,res, next)=>{
         if(limit === 1){
             await redisClient.expire(key, 60);
         }
-       else if(limit > 15){
+       else if(limit > 3){
             const remainTime = await redisClient.ttl(key);
-             return res.status(401).json({
+             return res.status(429).json({
                message : `To many request. Try again after ${remainTime} ` 
             });
         }
