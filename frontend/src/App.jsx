@@ -11,7 +11,7 @@ import Analytics from "./pages/Analytics";
 import Profile from "./pages/Profile";
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/shortener">
       <Routes>
         <Route
           path="/"
