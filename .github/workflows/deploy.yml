@@ -1,0 +1,40 @@
+
+name: Deploy URL Shortener to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.AWS_IP }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            set -e
+
+            export PATH="/home/ec2-user/.nvm/versions/node/v20.20.2/bin:$PATH"
+
+            cd /var/www/url-shortener
+            git pull --ff-only origin main
+
+            cd backend
+            npm ci
+
+            cd ../frontend
+            npm ci
+            npm run build
+
+            pm2 restart url-shortner-backend --update-env
